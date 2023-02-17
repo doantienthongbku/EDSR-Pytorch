@@ -7,7 +7,7 @@ from metrics.meter import AverageMeter, ProgressMeter
 import data.img_proc as imgproc
 
 
-def validation(config, g_model: nn.Module, data_prefetcher, epoch: int = 0,
+def validation(config, model: nn.Module, data_prefetcher, epoch: int = 0,
                writer=None, psnr_model=None, ssim_model=None, mode="valid"):
     if mode == "valid":
         # Calculate how many batches of data are in each Epoch
@@ -17,7 +17,7 @@ def validation(config, g_model: nn.Module, data_prefetcher, epoch: int = 0,
         progress = ProgressMeter(len(data_prefetcher), [batch_time, psnres, ssimes], prefix=f"{mode}: ")
     
         # convert mode to eval
-        g_model.eval()
+        model.eval()
         batch_index = 0
         
         data_prefetcher.reset()
@@ -31,7 +31,7 @@ def validation(config, g_model: nn.Module, data_prefetcher, epoch: int = 0,
                 lr = batch_data['lr'].to(config['device'], non_blocking=True)
                 
                 # generate super resolution image
-                sr = g_model(lr)
+                sr = model(lr)
                 
                 # compute psnr and ssim
                 psnr = psnr_model(sr, hr)
@@ -62,7 +62,7 @@ def validation(config, g_model: nn.Module, data_prefetcher, epoch: int = 0,
         psnr_metrics = []
         ssim_metrics = []
         
-        g_model.eval()
+        model.eval()
         batch_index = 0
         
         data_prefetcher.reset()
@@ -75,7 +75,7 @@ def validation(config, g_model: nn.Module, data_prefetcher, epoch: int = 0,
                 save_name = batch_data['name'][0]
                 
                 # generate super resolution image
-                sr = g_model(lr)
+                sr = model(lr)
                 save_path = os.path.join(config['test_dir'], save_name)
                 # Save image
                 sr_image = imgproc.tensor_to_image(sr, False, False)
@@ -97,7 +97,7 @@ def validation(config, g_model: nn.Module, data_prefetcher, epoch: int = 0,
         return psnr_metrics, ssim_metrics
             
     else:
-        raise ValueError("Unsupported mode, please use `Valid` or `Test`.")
+        raise ValueError("Unsupported mode, please use `valid` or `test`.")
         
             
     

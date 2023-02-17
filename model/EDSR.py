@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
-from sub_blocks import ResidualBlock, UpsampleBLock, MeanShift
+from model.sub_blocks import ResidualBlock, UpsampleBLock, MeanShift
 
 
 class EDSR(nn.Module):

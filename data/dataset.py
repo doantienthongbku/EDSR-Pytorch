@@ -1,10 +1,12 @@
 import os
+import gc
 import queue
 import threading
 
 import glob
 import cv2
 import numpy as np
+from tqdm import tqdm
 import torch
 from torch import Tensor
 from torch.utils.data import Dataset, DataLoader
@@ -34,11 +36,14 @@ class TrainValidImageDataset(Dataset):
     
     def __getitem__(self, index: int):
         # Read a batch of image data
-        image = cv2.imread(self.image_path_list[index]).astype(np.float32) / 255.
+        image = cv2.imread(self.image_path_list[index]).astype(np.float32) / 255.0
 
         # Image processing operations
         if self.mode == "train":
             hr_crop_image = imgproc.random_crop(image, self.crop_size)
+            hr_crop_image = imgproc.random_rotate(hr_crop_image, angles=[0, 90, 180, 270], center=None)
+            hr_crop_image = imgproc.random_horizontally_flip(hr_crop_image, p=0.5)
+            hr_crop_image = imgproc.random_vertically_flip(hr_crop_image, p=0.5)
         elif self.mode == "valid":
             hr_crop_image = imgproc.center_crop(image, self.crop_size)
         else:
@@ -162,13 +167,13 @@ class CUDAPrefetcher:
         device (torch.device): Specify running device.
     """
 
-    def __init__(self, dataloader: DataLoader, device: torch.device):
+    def __init__(self, dataloader: DataLoader, device: str):
         self.batch_data = None
         self.original_dataloader = dataloader
         self.device = device
 
         self.data = iter(dataloader)
-        self.stream = torch.cuda.Stream()
+        self.stream = torch.cuda.Stream(device=self.device)
         self.preload()
 
     def preload(self):
@@ -184,7 +189,7 @@ class CUDAPrefetcher:
                     self.batch_data[k] = self.batch_data[k].to(self.device, non_blocking=True)
 
     def next(self):
-        torch.cuda.current_stream().wait_stream(self.stream)
+        torch.cuda.current_stream(device=self.device).wait_stream(self.stream)
         batch_data = self.batch_data
         self.preload()
         return batch_data
