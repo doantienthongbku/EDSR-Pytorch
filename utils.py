@@ -43,7 +43,7 @@ def load_dataset(config, mode='train'):
             image_format=config['dataset']['image_format']
         )
         
-            # Generate dataloader
+        # dataloader
         train_loader = DataLoader(
             train_dataset, batch_size=config['dataset']['batch_size'], shuffle=True,
             num_workers=config['dataset']['num_workers'], pin_memory=True, drop_last=True, persistent_workers=True
